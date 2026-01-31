@@ -9,7 +9,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Lilla Sur Admin",
-  description: "Administrera beställningar och produkter för Lilla Sur",
+  description: "Manage orders and products for Lilla Sur",
 };
 
 export default function RootLayout({
@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="sv" className={inter.variable}>
+    <html lang="en" className={inter.variable}>
       <body className="min-h-screen">
         {children}
       </body>

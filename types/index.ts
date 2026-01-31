@@ -2,7 +2,7 @@
 export interface Product {
   id: string;
   name: string;
-  nameSv: string;
+  nameSv: string; // Swedish name
   description: string;
   descriptionSv: string;
   price: number;
@@ -12,14 +12,35 @@ export interface Product {
   featured?: boolean;
   allergens?: string[];
   weight?: string;
+  // NEW: Days when product is available
+  availableDays?: DayOfWeek[];
+  // NEW: Special product type (week special or day special)
+  specialType?: "week" | "day" | null;
+  // NEW: For Fettisdagen special products
+  isFettisdagen?: boolean;
+  minOrder?: number; // Minimum order quantity
 }
 
 export type ProductCategory = 
   | "bread" 
   | "pastry" 
   | "cookie" 
-  // | "cake" 
-  // | "seasonal";
+  | "dough"
+  | "seasonal";
+
+export type DayOfWeek = 
+  // | "monday"
+  | "tuesday" 
+  | "wednesday" 
+  | "thursday" 
+  | "friday" 
+  | "saturday" 
+  | "sunday";
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
+}
 
 // Order types
 export interface Order {
@@ -32,6 +53,8 @@ export interface Order {
   totalAmount: number;
   createdAt: Date;
   notes?: string;
+  // NEW: Flag for Fettisdagen orders
+  isFettisdagenOrder?: boolean;
 }
 
 export interface OrderItem {
@@ -53,3 +76,36 @@ export type OrderStatus =
   | "ready" 
   | "completed" 
   | "cancelled";
+
+// Store hours
+export interface StoreHours {
+  day: string;
+  open: string;
+  close: string;
+  closed?: boolean;
+}
+
+// Day labels for UI
+export const dayLabels: Record<DayOfWeek, string> = {
+  // monday: "Måndag",
+  tuesday: "Tisdag",
+  wednesday: "Onsdag",
+  thursday: "Torsdag",
+  friday: "Fredag",
+  saturday: "Lördag",
+  sunday: "Söndag",
+};
+
+export const dayLabelsEn: Record<DayOfWeek, string> = {
+  // monday: "Monday",
+  tuesday: "Tuesday",
+  wednesday: "Wednesday",
+  thursday: "Thursday",
+  friday: "Friday",
+  saturday: "Saturday",
+  sunday: "Sunday",
+};
+
+// Fettisdagen date (update yearly)
+export const FETTISDAGEN_DATE = "2025-03-04"; // March 4th, 2025
+export const FETTISDAGEN_MIN_KREMLA = 10;

@@ -101,6 +101,7 @@ export async function getProducts(): Promise<Product[]> {
         category: data.category,
         image: data.image,
         available: data.available,
+         availableDays: data.availableDays || [],
         featured: data.featured || false,
         allergens: data.allergens || [],
         weight: data.weight || "",
