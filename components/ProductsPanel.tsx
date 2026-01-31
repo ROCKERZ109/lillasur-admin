@@ -33,7 +33,7 @@ const categoryLabels: Record<ProductCategory, string> = {
   bread: "Bread",
   pastry: "Pastries",
   cookie: "Cookies",
-  dough: "Dough & Bases",
+  other: "Other",
   seasonal: "Seasonal",
 };
 
