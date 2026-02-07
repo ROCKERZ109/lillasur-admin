@@ -12,7 +12,7 @@ import {
 import { db } from "./firebase";
 import type { Order, OrderStatus } from "@/types";
 
-const ORDERS_COLLECTION = "orders";
+const ORDERS_COLLECTION = process.env.NEXT_PUBLIC_ORDER_DATABASE as string;
 
 // Create a new order
 export async function createOrder(order: Omit<Order, "id" | "createdAt">): Promise<string> {

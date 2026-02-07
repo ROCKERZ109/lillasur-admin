@@ -16,7 +16,7 @@ import {
   Package,
   Calendar,
   Sparkles,
-  Image as ImageIcon,
+  Layers,
 } from "lucide-react";
 import {
   getProducts,
@@ -27,7 +27,7 @@ import {
   toggleProductFeatured,
 } from "@/lib/products";
 import { formatPrice, cn } from "@/lib/utils";
-import type { Product, ProductCategory, DayOfWeek } from "@/types";
+import type { Product, ProductCategory, DayOfWeek, ProductVariant } from "@/types";
 
 const categoryLabels: Record<ProductCategory, string> = {
   bread: "Bread",
@@ -47,18 +47,24 @@ const allergenLabels: Record<string, string> = {
 };
 
 const allDays: DayOfWeek[] = [
-  // "monday", 
   "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
 ];
 
 const dayLabels: Record<DayOfWeek, string> = {
-  // monday: "Mon",
   tuesday: "Tue",
   wednesday: "Wed",
   thursday: "Thu",
   friday: "Fri",
   saturday: "Sat",
   sunday: "Sun",
+};
+
+const emptyVariant: ProductVariant = {
+  id: "",
+  name: "",
+  nameSv: "",
+  priceDiff: 0,
+  available: true,
 };
 
 const emptyProduct: Omit<Product, "id"> = {
@@ -76,6 +82,10 @@ const emptyProduct: Omit<Product, "id"> = {
   availableDays: [],
   specialType: null,
   minOrder: 1,
+  hasVariants: false,
+  variantLabel: "",
+  variantLabelSv: "",
+  variants: [],
 };
 
 export default function ProductsPanel() {
@@ -113,7 +123,6 @@ export default function ProductsPanel() {
   }, []);
 
   const handleOpenModal = (product?: Product) => {
-    console.log(product)
     if (product) {
       setEditingProduct(product);
       setFormData({
@@ -131,6 +140,10 @@ export default function ProductsPanel() {
         availableDays: product.availableDays || [],
         specialType: product.specialType || null,
         minOrder: product.minOrder || 1,
+        hasVariants: product.hasVariants || false,
+        variantLabel: product.variantLabel || "",
+        variantLabelSv: product.variantLabelSv || "",
+        variants: product.variants || [],
       });
       setImagePreview(product.image);
     } else {
@@ -231,6 +244,34 @@ export default function ProductsPanel() {
       availableDays: checked
         ? [...(prev.availableDays || []), day]
         : (prev.availableDays || []).filter((d) => d !== day),
+    }));
+  };
+
+  // ✅ Variant handlers
+  const handleAddVariant = () => {
+    const newVariant: ProductVariant = {
+      ...emptyVariant,
+      id: `variant-${Date.now()}`,
+    };
+    setFormData((prev) => ({
+      ...prev,
+      variants: [...(prev.variants || []), newVariant],
+    }));
+  };
+
+  const handleUpdateVariant = (index: number, field: keyof ProductVariant, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      variants: prev.variants?.map((v, i) =>
+        i === index ? { ...v, [field]: value } : v
+      ),
+    }));
+  };
+
+  const handleRemoveVariant = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      variants: prev.variants?.filter((_, i) => i !== index),
     }));
   };
 
@@ -356,17 +397,50 @@ export default function ProductsPanel() {
                   {product.specialType === "day" && (
                     <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">Daily</span>
                   )}
+                  {/* ✅ Variants badge */}
+                  {product.hasVariants && product.variants && product.variants.length > 0 && (
+                    <span className="px-2 py-0.5 bg-purple-600 text-white text-xs rounded-full">
+                      {product.variants.length} variants
+                    </span>
+                  )}
                 </div>
               </div>
 
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="min-w-0">
-                    <h3 className="font-medium text-crust-900 truncate">{product.name}</h3>
+                    <h3 className="font-medium text-crust-900 truncate">{product.nameSv || product.name}</h3>
                     <p className="text-xs text-crust-500">{categoryLabels[product.category]}</p>
                   </div>
-                  <p className="font-semibold text-crust-900 flex-shrink-0">{formatPrice(product.price)}</p>
+                  <p className="font-semibold text-crust-900 flex-shrink-0">
+                    {product.hasVariants && "from "}
+                    {formatPrice(product.price)}
+                  </p>
                 </div>
+
+                {/* ✅ Variants preview */}
+                {product.hasVariants && product.variants && product.variants.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {product.variants.map((variant) => (
+                      <span
+                        key={variant.id}
+                        className={cn(
+                          "text-xs px-1.5 py-0.5 rounded",
+                          variant.available
+                            ? "bg-purple-100 text-purple-700"
+                            : "bg-gray-100 text-gray-400 line-through"
+                        )}
+                      >
+                        {variant.nameSv || variant.name}
+                        {variant.priceDiff !== 0 && (
+                          <span className="ml-1">
+                            ({variant.priceDiff! > 0 ? "+" : ""}{variant.priceDiff} kr)
+                          </span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 <div className="flex items-center gap-1 text-xs text-crust-500 mb-2 flex-wrap">
                   <Calendar className="w-3 h-3 flex-shrink-0" />
@@ -395,7 +469,7 @@ export default function ProductsPanel() {
                 )}
 
                 <p className="text-sm text-crust-600 line-clamp-2 mb-3">
-                  {product.description}
+                  {product.descriptionSv || product.description}
                 </p>
 
                 <div className="flex items-center justify-between pt-3 border-t border-flour-200">
@@ -466,6 +540,7 @@ export default function ProductsPanel() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
+              {/* Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-crust-700 mb-2">
                   Product Image
@@ -505,6 +580,7 @@ export default function ProductsPanel() {
                 </div>
               </div>
 
+              {/* Names */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-crust-700 mb-1">Name (Swedish) *</label>
@@ -527,6 +603,7 @@ export default function ProductsPanel() {
                 </div>
               </div>
 
+              {/* Descriptions */}
               <div>
                 <label className="block text-sm font-medium text-crust-700 mb-1">Description (Swedish) *</label>
                 <textarea
@@ -547,15 +624,16 @@ export default function ProductsPanel() {
                 />
               </div>
 
+              {/* Price, Category, Weight */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-crust-700 mb-1">Price (SEK) *</label>
                   <input
                     type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                    value={formData.price.toString()}
+                    onChange={(e) => setFormData({ ...formData, price: Number(parseInt(e.target.value)) })}
                     className="input-field"
-                    min="0"
+                    min={0}
                     required
                   />
                 </div>
@@ -584,6 +662,125 @@ export default function ProductsPanel() {
                 </div>
               </div>
 
+              {/* ✅ VARIANTS SECTION */}
+              <div className="border-t border-flour-200 pt-4">
+                <label className="flex items-center gap-2 mb-4 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.hasVariants || false}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      hasVariants: e.target.checked,
+                      variants: e.target.checked ? (formData.variants || []) : []
+                    })}
+                    className="rounded border-crust-300 text-crust-600 focus:ring-crust-500"
+                  />
+                  <Layers className="w-4 h-4 text-crust-500" />
+                  <span className="text-sm font-medium text-crust-700">This product has variants (e.g. flavors, sizes)</span>
+                </label>
+
+                {formData.hasVariants && (
+                  <div className="space-y-4 pl-6 border-l-2 border-purple-200">
+                    {/* Variant Labels */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-crust-700 mb-1">
+                          Variant Label (English)
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.variantLabel || ""}
+                          onChange={(e) => setFormData({ ...formData, variantLabel: e.target.value })}
+                          placeholder="e.g. Flavor, Size"
+                          className="input-field"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-crust-700 mb-1">
+                          Variant Label (Swedish)
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.variantLabelSv || ""}
+                          onChange={(e) => setFormData({ ...formData, variantLabelSv: e.target.value })}
+                          placeholder="e.g. Smak, Storlek"
+                          className="input-field"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Variants List */}
+                    <div>
+                      <label className="block text-sm font-medium text-crust-700 mb-2">Variants</label>
+                      <div className="space-y-3">
+                        {(formData.variants || []).map((variant, index) => (
+                          <div key={variant.id || index} className="flex flex-wrap gap-2 p-3 bg-flour-50 rounded-lg border border-flour-200">
+                            <div className="flex-1 min-w-[120px]">
+                              <input
+                                type="text"
+                                value={variant.nameSv}
+                                onChange={(e) => handleUpdateVariant(index, "nameSv", e.target.value)}
+                                placeholder="Name (SV) *"
+                                className="input-field text-sm"
+                                required
+                              />
+                            </div>
+                            <div className="flex-1 min-w-[120px]">
+                              <input
+                                type="text"
+                                value={variant.name}
+                                onChange={(e) => handleUpdateVariant(index, "name", e.target.value)}
+                                placeholder="Name (EN)"
+                                className="input-field text-sm"
+                              />
+                            </div>
+                            <div className="w-24">
+                              <input
+                                type="number"
+                                value={variant.priceDiff || 0}
+                                onChange={(e) => handleUpdateVariant(index, "priceDiff", Number(e.target.value))}
+                                placeholder="+/- kr"
+                                className="input-field text-sm"
+                              />
+                            </div>
+                            <label className="flex items-center gap-1 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={variant.available}
+                                onChange={(e) => handleUpdateVariant(index, "available", e.target.checked)}
+                                className="rounded border-crust-300 text-green-600 focus:ring-green-500"
+                              />
+                              <span className="text-crust-600">Available</span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveVariant(index)}
+                              className="p-2 text-red-500 hover:bg-red-50 rounded-md"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleAddVariant}
+                        className="mt-3 text-sm text-purple-600 hover:text-purple-800 flex items-center gap-1"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Variant
+                      </button>
+
+                      <p className="text-xs text-crust-500 mt-2">
+                        Price diff: Use 0 for same price, positive for more, negative for less (e.g. -5 for 5 kr less)
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Available Days */}
               <div>
                 <label className="block text-sm font-medium text-crust-700 mb-2">
                   <Calendar className="w-4 h-4 inline mr-1" />
@@ -613,6 +810,7 @@ export default function ProductsPanel() {
                 <p className="text-xs text-crust-500 mt-1">If no days are selected, the product is available every day</p>
               </div>
 
+              {/* Special & Min Order */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-crust-700 mb-1">
@@ -644,6 +842,7 @@ export default function ProductsPanel() {
                 </div>
               </div>
 
+              {/* Allergens */}
               <div>
                 <label className="block text-sm font-medium text-crust-700 mb-2">Allergens</label>
                 <div className="flex flex-wrap gap-3">
@@ -661,6 +860,7 @@ export default function ProductsPanel() {
                 </div>
               </div>
 
+              {/* Toggles */}
               <div className="flex flex-wrap gap-4 sm:gap-6">
                 <label className="flex items-center gap-2">
                   <input
@@ -682,6 +882,7 @@ export default function ProductsPanel() {
                 </label>
               </div>
 
+              {/* Submit Buttons */}
               <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-flour-200">
                 <button type="button" onClick={handleCloseModal} className="btn-secondary w-full sm:w-auto">
                   Cancel

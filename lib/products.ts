@@ -18,7 +18,7 @@ import {
 import { db, storage } from "./firebase";
 import type { Product, ProductCategory } from "@/types";
 
-const PRODUCTS_COLLECTION = "products";
+const PRODUCTS_COLLECTION = process.env.NEXT_PUBLIC_PRODUCT_DATABASE as string;
 
 // Upload image to Firebase Storage
 export async function uploadProductImage(

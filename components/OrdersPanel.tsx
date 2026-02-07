@@ -69,7 +69,7 @@ export default function OrdersPanel() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "tomorrow" | "custom">("all");
   const [customDate, setCustomDate] = useState("");
-  
+
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
 
@@ -161,7 +161,7 @@ export default function OrdersPanel() {
 
   const handlePrint = () => {
     const ordersToPrint = selectedOrders.size > 0 ? getSelectedOrders() : sortedOrders;
-    
+
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -207,7 +207,7 @@ export default function OrdersPanel() {
             <div class="items">
               ${order.items.map(item => `
                 <div class="item">
-                  <span>${item.quantity}× ${item.productName}</span>
+                  <span>${item.quantity}× ${item.productName} ${item.variantId != null ? `- ${item.variantName}` : ""}</span>
                   <span>${item.price * item.quantity} kr</span>
                 </div>
               `).join('')}
@@ -268,7 +268,7 @@ export default function OrdersPanel() {
         <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-1 px-1">
           <CalendarDays className="w-4 h-4 text-crust-500 flex-shrink-0" />
           <span className="text-sm text-crust-600 flex-shrink-0">Date:</span>
-          
+
           {[
             { key: "all", label: "All", color: "bg-crust-900" },
             { key: "today", label: `Today (${todayCount})`, color: "bg-green-600" },
@@ -288,7 +288,7 @@ export default function OrdersPanel() {
               {btn.label}
             </button>
           ))}
-          
+
           {dateFilter === "custom" && (
             <input
               type="date"
@@ -345,7 +345,7 @@ export default function OrdersPanel() {
             >
               {selectMode ? "Cancel selection" : "Select for print"}
             </button>
-            
+
             {selectMode && (
               <>
                 <button
@@ -513,7 +513,7 @@ export default function OrdersPanel() {
                       <ul className="space-y-2">
                         {order.items.map((item, index) => (
                           <li key={index} className="flex justify-between text-sm">
-                            <span className="text-crust-600">{item.quantity}× {item.productName}</span>
+                            <span className="text-crust-600">{item.quantity}× {item.productName} {item.variantId != null ? `- ${item.variantName}` : ""} </span>
                             <span className="text-crust-900 font-medium">{formatPrice(item.price * item.quantity)}</span>
                           </li>
                         ))}
