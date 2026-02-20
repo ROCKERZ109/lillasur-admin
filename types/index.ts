@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase-admin/firestore";
+
 // Product types
 export interface Product {
   id: string;
@@ -41,9 +43,15 @@ export interface CartItem {
   quantity: number;
 }
 
+interface comment{
+message:string,
+sentAt: string,
+sentBy:string
+}
 // Order types
 export interface Order {
   id?: string;
+  comments?:comment[];
   items: OrderItem[];
   customer: CustomerInfo;
   pickupDate: string;
@@ -54,6 +62,7 @@ export interface Order {
   notes?: string;
   // NEW: Flag for Fettisdagen orders
   isFettisdagenOrder?: boolean;
+  hasNewComment?: boolean;  
 }
 
 export interface OrderItem {

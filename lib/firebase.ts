@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
-import { getFunctions } from "firebase/functions";
+import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
 import { connectStorageEmulator, getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -18,13 +18,15 @@ const firebaseConfig = {
 
 // export { app, db, storage };
 // Initialize Firebase
- const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const app =
+  getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+// const db = getFirestore(app);
+const storage = getStorage(app);
+const functions = getFunctions(app);
 const db = getFirestore(app);
- const storage = getStorage(app)
-// const functions = getFunctions(app);
-// const db = getFirestore(app)
 
 // connectFirestoreEmulator(db, "127.0.0.1", 8080);
-// connectStorageEmulator(storage, "127.0.0.1",9199);
+// connectStorageEmulator(storage, "127.0.0.1", 9199);
+// connectFunctionsEmulator(functions, "127.0.0.1", 5001);
 // console.log(db)
-export { app, db,storage };
+export { app, db, storage };

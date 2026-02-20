@@ -18,8 +18,9 @@ import {
   Printer,
   Square,
   CheckSquare,
+  MessageCircle,
 } from "lucide-react";
-import { getAllOrders, updateOrderStatus } from "@/lib/orders";
+import { getAllOrders, sendOrderComment, updateOrderStatus } from "@/lib/orders";
 import { formatPrice, cn } from "@/lib/utils";
 import type { Order, OrderStatus } from "@/types";
 
@@ -72,7 +73,49 @@ export default function OrdersPanel() {
 
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageOrderId, setMessageOrderId] = useState<string | null>(null);
+  const [messageText, setMessageText] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
 
+  // Send message function
+  const handleSendMessage = async () => {
+    if (!messageOrderId || !messageText.trim()) return;
+
+    setSendingMessage(true);
+    try {
+      await sendOrderComment(messageOrderId, messageText.trim());
+
+      // Update local state
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === messageOrderId
+            ? {
+              ...order,
+              comments: [
+                ...(order.comments || []),
+                { message: messageText.trim(), sentAt: new Date().toISOString(), sentBy: "owner" }
+              ]
+            }
+            : order
+        )
+      );
+
+      // Reset
+      setShowMessageModal(false);
+      setMessageOrderId(null);
+      setMessageText("");
+    } catch (err) {
+      console.error("Failed to send message:", err);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const openMessageModal = (orderId: string) => {
+    setMessageOrderId(orderId);
+    setShowMessageModal(true);
+  };
   const fetchOrders = async () => {
     setLoading(true);
     setError("");
@@ -90,8 +133,26 @@ export default function OrdersPanel() {
   useEffect(() => {
     fetchOrders();
   }, []);
+  // OrdersPanel.tsx mein changes
 
+  // Add state for comment modal
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    orderId: string;
+    status: OrderStatus;
+  } | null>(null);
+  const [ownerComment, setOwnerComment] = useState("");
+
+  // Modified handleStatusChange
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    // If confirming, show comment modal
+    if (newStatus === "confirmed") {
+      setPendingStatusChange({ orderId, status: newStatus });
+      setShowCommentModal(true);
+      return;
+    }
+
+    // Other status changes - direct update
     try {
       await updateOrderStatus(orderId, newStatus);
       setOrders((prev) =>
@@ -99,6 +160,34 @@ export default function OrdersPanel() {
           order.id === orderId ? { ...order, status: newStatus } : order
         )
       );
+    } catch (err) {
+      console.error("Failed to update status:", err);
+    }
+  };
+
+  // New function for confirm with comment
+  const handleConfirmWithComment = async () => {
+    if (!pendingStatusChange) return;
+
+    try {
+      await updateOrderStatus(
+        pendingStatusChange.orderId,
+        pendingStatusChange.status,
+        ownerComment.trim() || undefined  // Pass comment
+      );
+
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === pendingStatusChange.orderId
+            ? { ...order, status: pendingStatusChange.status, ownerComment: ownerComment.trim() }
+            : order
+        )
+      );
+
+      // Reset
+      setShowCommentModal(false);
+      setPendingStatusChange(null);
+      setOwnerComment("");
     } catch (err) {
       console.error("Failed to update status:", err);
     }
@@ -551,12 +640,190 @@ export default function OrdersPanel() {
                           : new Date(order.createdAt).toLocaleString("en-US")}
                       </p>
                     </div>
+                    {/* Inside expanded order details, after Update Status section */}
+
+                    <div className="mt-4 pt-4 border-t border-flour-200">
+                      <h4 className="font-medium text-crust-900 mb-3 text-sm">Send Message</h4>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openMessageModal(order.id!);
+                        }}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Send Message to Customer
+                      </button>
+
+                      {/* Show previous comments */}
+                      {order.comments && order.comments.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-xs text-crust-500">Previous messages:</p>
+                          {order.comments.map((comment, idx) => (
+                            <div key={idx} className="p-2 bg-amber-50 rounded-lg text-sm text-amber-800">
+                              <p>"{comment.message}"</p>
+                              <p className="text-xs text-amber-600 mt-1">
+                                {new Date(comment.sentAt).toLocaleString()}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           ))}
         </div>
+      )}
+      {/* Message Modal */}
+      {showMessageModal && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-50"
+            onClick={() => {
+              setShowMessageModal(false);
+              setMessageOrderId(null);
+              setMessageText("");
+            }}
+          />
+
+          {/* Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                  <MessageCircle className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-crust-900">
+                    Send Message
+                  </h3>
+                  <p className="text-sm text-crust-500">
+                    Customer will receive an email
+                  </p>
+                </div>
+              </div>
+
+              <textarea
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                placeholder="e.g., Hey! We don't have chocolate croissants today. Would you like almond instead?"
+                rows={4}
+                className="w-full px-4 py-3 border border-flour-300 rounded-lg text-sm focus:outline-none focus:border-crust-400 resize-none mb-4"
+              />
+
+              {/* Quick Messages */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {[
+                  "We are out of stock of this product, what alternative would you like?",
+                  "Can you confirm your pick-up time?",
+                  "We have a special offer for you!",
+                ].map((msg) => (
+                  <button
+                    key={msg}
+                    onClick={() => setMessageText(msg)}
+                    className="px-3 py-1.5 bg-flour-100 hover:bg-flour-200 text-crust-600 text-xs rounded-full transition-colors"
+                  >
+                    {msg.slice(0, 25)}...
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowMessageModal(false);
+                    setMessageOrderId(null);
+                    setMessageText("");
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-flour-200 hover:bg-flour-300 text-crust-700 font-medium rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!messageText.trim() || sendingMessage}
+                  className="flex-1 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {sendingMessage ? "Sending..." : "Send Message"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+      {/* Comment Modal */}
+      {showCommentModal && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-50"
+            onClick={() => {
+              setShowCommentModal(false);
+              setPendingStatusChange(null);
+              setOwnerComment("");
+            }}
+          />
+
+          {/* Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-6">
+              <h3 className="text-lg font-semibold text-crust-900 mb-2">
+                Confirm Order
+              </h3>
+              <p className="text-sm text-crust-500 mb-4">
+                Add a personal message for the customer (optional)
+              </p>
+
+              <textarea
+                value={ownerComment}
+                onChange={(e) => setOwnerComment(e.target.value)}
+                placeholder="e.g., Vi ser fram emot ditt besök! / We look forward to seeing you!"
+                rows={3}
+                className="w-full px-4 py-3 border border-flour-300 rounded-lg text-sm focus:outline-none focus:border-crust-400 resize-none mb-4"
+              />
+
+              {/* Quick Messages */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {[
+                  "We look forward to your visit! 😊",
+                  "Thank you for your order!",
+                  "Your order will be fresh and ready!",
+                ].map((msg) => (
+                  <button
+                    key={msg}
+                    onClick={() => setOwnerComment(msg)}
+                    className="px-3 py-1.5 bg-flour-100 hover:bg-flour-200 text-crust-600 text-xs rounded-full transition-colors"
+                  >
+                    {msg}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowCommentModal(false);
+                    setPendingStatusChange(null);
+                    setOwnerComment("");
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-flour-200 hover:bg-flour-300 text-crust-700 font-medium rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmWithComment}
+                  className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  Confirm Order
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
