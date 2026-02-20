@@ -1,4 +1,4 @@
-import { Timestamp } from "firebase-admin/firestore";
+
 
 // Product types
 export interface Product {
