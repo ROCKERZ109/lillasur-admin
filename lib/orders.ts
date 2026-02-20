@@ -148,7 +148,7 @@ export async function sendOrderComment(
   orderId: string,
   message: string
 ): Promise<void> {
-  const orderRef = doc(db, 'test-orders', orderId);
+  const orderRef = doc(db, ORDERS_COLLECTION, orderId);
 
   await updateDoc(orderRef, {
     comments: arrayUnion({
