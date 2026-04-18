@@ -27,7 +27,12 @@ import {
   toggleProductFeatured,
 } from "@/lib/products";
 import { formatPrice, cn } from "@/lib/utils";
-import type { Product, ProductCategory, DayOfWeek, ProductVariant } from "@/types";
+import type {
+  Product,
+  ProductCategory,
+  DayOfWeek,
+  ProductVariant,
+} from "@/types";
 
 const categoryLabels: Record<ProductCategory, string> = {
   bread: "Bread",
@@ -47,7 +52,12 @@ const allergenLabels: Record<string, string> = {
 };
 
 const allDays: DayOfWeek[] = [
-  "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
 ];
 
 const dayLabels: Record<DayOfWeek, string> = {
@@ -93,7 +103,9 @@ export default function ProductsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<ProductCategory | "all">("all");
+  const [categoryFilter, setCategoryFilter] = useState<ProductCategory | "all">(
+    "all",
+  );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -182,7 +194,11 @@ export default function ProductsPanel() {
 
     try {
       if (editingProduct) {
-        await updateProduct(editingProduct.id, formData, imageFile || undefined);
+        await updateProduct(
+          editingProduct.id,
+          formData,
+          imageFile || undefined,
+        );
       } else {
         await createProduct(formData, imageFile || undefined);
       }
@@ -207,22 +223,32 @@ export default function ProductsPanel() {
     }
   };
 
-  const handleToggleAvailability = async (productId: string, currentValue: boolean) => {
+  const handleToggleAvailability = async (
+    productId: string,
+    currentValue: boolean,
+  ) => {
     try {
       await toggleProductAvailability(productId, !currentValue);
       setProducts((prev) =>
-        prev.map((p) => p.id === productId ? { ...p, available: !currentValue } : p)
+        prev.map((p) =>
+          p.id === productId ? { ...p, available: !currentValue } : p,
+        ),
       );
     } catch (err) {
       console.error("Failed to toggle availability:", err);
     }
   };
 
-  const handleToggleFeatured = async (productId: string, currentValue: boolean) => {
+  const handleToggleFeatured = async (
+    productId: string,
+    currentValue: boolean,
+  ) => {
     try {
       await toggleProductFeatured(productId, !currentValue);
       setProducts((prev) =>
-        prev.map((p) => p.id === productId ? { ...p, featured: !currentValue } : p)
+        prev.map((p) =>
+          p.id === productId ? { ...p, featured: !currentValue } : p,
+        ),
       );
     } catch (err) {
       console.error("Failed to toggle featured:", err);
@@ -239,15 +265,28 @@ export default function ProductsPanel() {
   };
 
   const handleDayChange = (day: DayOfWeek, checked: boolean) => {
+    setFormData((prev) => {
+      const newDays = checked
+        ? [...(prev.availableDays || []), day]
+        : (prev.availableDays || []).filter((d) => d !== day);
+
+      return {
+        ...prev,
+        availableDays: newDays,
+        available: newDays.length > 0,
+      };
+    });
+  };
+  const handleAllAvailableDaysChange = (
+    allDays: DayOfWeek[],
+    checked: boolean,
+  ) => {
     setFormData((prev) => ({
       ...prev,
-      availableDays: checked
-        ? [...(prev.availableDays || []), day]
-        : (prev.availableDays || []).filter((d) => d !== day),
+      availableDays: checked ? [...allDays] : [],
+      available: checked,
     }));
   };
-
-  // ✅ Variant handlers
   const handleAddVariant = () => {
     const newVariant: ProductVariant = {
       ...emptyVariant,
@@ -259,11 +298,15 @@ export default function ProductsPanel() {
     }));
   };
 
-  const handleUpdateVariant = (index: number, field: keyof ProductVariant, value: any) => {
+  const handleUpdateVariant = (
+    index: number,
+    field: keyof ProductVariant,
+    value: any,
+  ) => {
     setFormData((prev) => ({
       ...prev,
       variants: prev.variants?.map((v, i) =>
-        i === index ? { ...v, [field]: value } : v
+        i === index ? { ...v, [field]: value } : v,
       ),
     }));
   };
@@ -285,8 +328,8 @@ export default function ProductsPanel() {
   });
 
   const formatAvailableDays = (days?: DayOfWeek[]): string => {
-    if (!days || days.length === 0 || days.length === 7) return "All days";
-    return days.map(d => dayLabels[d]).join(", ");
+    if (!days || days.length === 6) return "All days";
+    return days.map((d) => dayLabels[d]).join(", ");
   };
 
   return (
@@ -305,7 +348,10 @@ export default function ProductsPanel() {
             </button>
           </div>
 
-          <button onClick={() => handleOpenModal()} className="btn-primary w-full sm:w-auto justify-center">
+          <button
+            onClick={() => handleOpenModal()}
+            className="btn-primary w-full sm:w-auto justify-center"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add Product
           </button>
@@ -326,12 +372,16 @@ export default function ProductsPanel() {
 
           <select
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value as ProductCategory | "all")}
+            onChange={(e) =>
+              setCategoryFilter(e.target.value as ProductCategory | "all")
+            }
             className="px-3 py-2 border border-flour-300 rounded-md text-sm focus:outline-none focus:border-crust-400"
           >
             <option value="all">All categories</option>
             {Object.entries(categoryLabels).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
+              <option key={key} value={key}>
+                {label}
+              </option>
             ))}
           </select>
         </div>
@@ -368,7 +418,7 @@ export default function ProductsPanel() {
               key={product.id}
               className={cn(
                 "border rounded-lg overflow-hidden bg-white transition-all",
-                !product.available && "opacity-60"
+                !product.available && "opacity-60",
               )}
             >
               <div className="aspect-video bg-flour-200 relative">
@@ -386,31 +436,45 @@ export default function ProductsPanel() {
 
                 <div className="absolute top-2 left-2 flex gap-1 flex-wrap max-w-[80%]">
                   {!product.available && (
-                    <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">Hidden</span>
-                  )}
-                  {product.featured && (
-                    <span className="px-2 py-0.5 bg-yellow-500 text-white text-xs rounded-full">Featured</span>
-                  )}
-                  {product.specialType === "week" && (
-                    <span className="px-2 py-0.5 bg-purple-500 text-white text-xs rounded-full">Weekly</span>
-                  )}
-                  {product.specialType === "day" && (
-                    <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">Daily</span>
-                  )}
-                  {/* ✅ Variants badge */}
-                  {product.hasVariants && product.variants && product.variants.length > 0 && (
-                    <span className="px-2 py-0.5 bg-purple-600 text-white text-xs rounded-full">
-                      {product.variants.length} variants
+                    <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                      Hidden
                     </span>
                   )}
+                  {product.featured && (
+                    <span className="px-2 py-0.5 bg-yellow-500 text-white text-xs rounded-full">
+                      Featured
+                    </span>
+                  )}
+                  {product.specialType === "week" && (
+                    <span className="px-2 py-0.5 bg-purple-500 text-white text-xs rounded-full">
+                      Weekly
+                    </span>
+                  )}
+                  {product.specialType === "day" && (
+                    <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+                      Daily
+                    </span>
+                  )}
+                  {/* ✅ Variants badge */}
+                  {product.hasVariants &&
+                    product.variants &&
+                    product.variants.length > 0 && (
+                      <span className="px-2 py-0.5 bg-purple-600 text-white text-xs rounded-full">
+                        {product.variants.length} variants
+                      </span>
+                    )}
                 </div>
               </div>
 
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="min-w-0">
-                    <h3 className="font-medium text-crust-900 truncate">{product.nameSv || product.name}</h3>
-                    <p className="text-xs text-crust-500">{categoryLabels[product.category]}</p>
+                    <h3 className="font-medium text-crust-900 truncate">
+                      {product.nameSv || product.name}
+                    </h3>
+                    <p className="text-xs text-crust-500">
+                      {categoryLabels[product.category]}
+                    </p>
                   </div>
                   <p className="font-semibold text-crust-900 flex-shrink-0">
                     {product.hasVariants && "from "}
@@ -419,54 +483,62 @@ export default function ProductsPanel() {
                 </div>
 
                 {/* ✅ Variants preview */}
-                {product.hasVariants && product.variants && product.variants.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {product.variants.map((variant) => (
-                      <span
-                        key={variant.id}
-                        className={cn(
-                          "text-xs px-1.5 py-0.5 rounded",
-                          variant.available
-                            ? "bg-purple-100 text-purple-700"
-                            : "bg-gray-100 text-gray-400 line-through"
-                        )}
-                      >
-                        {variant.nameSv || variant.name}
-                        {variant.priceDiff !== 0 && (
-                          <span className="ml-1">
-                            ({variant.priceDiff! > 0 ? "+" : ""}{variant.priceDiff} kr)
-                          </span>
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                {product.hasVariants &&
+                  product.variants &&
+                  product.variants.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {product.variants.map((variant) => (
+                        <span
+                          key={variant.id}
+                          className={cn(
+                            "text-xs px-1.5 py-0.5 rounded",
+                            variant.available
+                              ? "bg-purple-100 text-purple-700"
+                              : "bg-gray-100 text-gray-400 line-through",
+                          )}
+                        >
+                          {variant.nameSv || variant.name}
+                          {variant.priceDiff !== 0 && (
+                            <span className="ml-1">
+                              ({variant.priceDiff! > 0 ? "+" : ""}
+                              {variant.priceDiff} kr)
+                            </span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
                 <div className="flex items-center gap-1 text-xs text-crust-500 mb-2 flex-wrap">
                   <Calendar className="w-3 h-3 flex-shrink-0" />
-                  <span className="truncate">{formatAvailableDays(product.availableDays)}</span>
+                  <span className="truncate">
+                    {formatAvailableDays(product.availableDays)}
+                  </span>
                 </div>
 
-                {product.availableDays && product.availableDays.length > 0 && product.availableDays.length < 7 && (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {allDays.map((day) => {
-                      const isAvailable = product.availableDays?.includes(day);
-                      return (
-                        <span
-                          key={day}
-                          className={cn(
-                            "text-xs px-1.5 py-0.5 rounded",
-                            isAvailable
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-400 line-through"
-                          )}
-                        >
-                          {dayLabels[day]}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
+                {product.availableDays &&
+                  product.availableDays.length > 0 &&
+                  product.availableDays.length < 7 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {allDays.map((day) => {
+                        const isAvailable =
+                          product.availableDays?.includes(day);
+                        return (
+                          <span
+                            key={day}
+                            className={cn(
+                              "text-xs px-1.5 py-0.5 rounded",
+                              isAvailable
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-400 line-through",
+                            )}
+                          >
+                            {dayLabels[day]}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
 
                 <p className="text-sm text-crust-600 line-clamp-2 mb-3">
                   {product.descriptionSv || product.description}
@@ -475,28 +547,47 @@ export default function ProductsPanel() {
                 <div className="flex items-center justify-between pt-3 border-t border-flour-200">
                   <div className="flex gap-1">
                     <button
-                      onClick={() => handleToggleAvailability(product.id, product.available)}
+                      onClick={() =>
+                        handleToggleAvailability(product.id, product.available)
+                      }
                       className={cn(
                         "p-2 rounded-md transition-colors",
                         product.available
                           ? "text-green-600 hover:bg-green-50"
-                          : "text-crust-400 hover:bg-flour-100"
+                          : "text-crust-400 hover:bg-flour-100",
                       )}
-                      title={product.available ? "Hide product" : "Show product"}
+                      title={
+                        product.available ? "Hide product" : "Show product"
+                      }
                     >
-                      {product.available ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      {product.available ? (
+                        <Eye className="w-4 h-4" />
+                      ) : (
+                        <EyeOff className="w-4 h-4" />
+                      )}
                     </button>
                     <button
-                      onClick={() => handleToggleFeatured(product.id, product.featured || false)}
+                      onClick={() =>
+                        handleToggleFeatured(
+                          product.id,
+                          product.featured || false,
+                        )
+                      }
                       className={cn(
                         "p-2 rounded-md transition-colors",
                         product.featured
                           ? "text-yellow-500 hover:bg-yellow-50"
-                          : "text-crust-400 hover:bg-flour-100"
+                          : "text-crust-400 hover:bg-flour-100",
                       )}
-                      title={product.featured ? "Remove from home" : "Show on home"}
+                      title={
+                        product.featured ? "Remove from home" : "Show on home"
+                      }
                     >
-                      {product.featured ? <Star className="w-4 h-4 fill-current" /> : <StarOff className="w-4 h-4" />}
+                      {product.featured ? (
+                        <Star className="w-4 h-4 fill-current" />
+                      ) : (
+                        <StarOff className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
 
@@ -551,7 +642,11 @@ export default function ProductsPanel() {
                     onClick={() => fileInputRef.current?.click()}
                   >
                     {imagePreview ? (
-                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <div className="text-center">
                         <Upload className="w-8 h-8 text-crust-400 mx-auto" />
@@ -559,7 +654,13 @@ export default function ProductsPanel() {
                       </div>
                     )}
                   </div>
-                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
                   <div className="text-sm text-crust-500">
                     <p>Click to upload</p>
                     <p className="text-xs">PNG, JPG, max 5MB</p>
@@ -583,21 +684,29 @@ export default function ProductsPanel() {
               {/* Names */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-crust-700 mb-1">Name (Swedish) *</label>
+                  <label className="block text-sm font-medium text-crust-700 mb-1">
+                    Name (Swedish) *
+                  </label>
                   <input
                     type="text"
                     value={formData.nameSv}
-                    onChange={(e) => setFormData({ ...formData, nameSv: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, nameSv: e.target.value })
+                    }
                     className="input-field"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-crust-700 mb-1">Name (English)</label>
+                  <label className="block text-sm font-medium text-crust-700 mb-1">
+                    Name (English)
+                  </label>
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     className="input-field"
                   />
                 </div>
@@ -605,20 +714,28 @@ export default function ProductsPanel() {
 
               {/* Descriptions */}
               <div>
-                <label className="block text-sm font-medium text-crust-700 mb-1">Description (Swedish) *</label>
+                <label className="block text-sm font-medium text-crust-700 mb-1">
+                  Description (Swedish) *
+                </label>
                 <textarea
                   value={formData.descriptionSv}
-                  onChange={(e) => setFormData({ ...formData, descriptionSv: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, descriptionSv: e.target.value })
+                  }
                   className="input-field"
                   rows={2}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-crust-700 mb-1">Description (English)</label>
+                <label className="block text-sm font-medium text-crust-700 mb-1">
+                  Description (English)
+                </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   className="input-field"
                   rows={2}
                 />
@@ -627,35 +744,55 @@ export default function ProductsPanel() {
               {/* Price, Category, Weight */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-crust-700 mb-1">Price (SEK) *</label>
+                  <label className="block text-sm font-medium text-crust-700 mb-1">
+                    Price (SEK) *
+                  </label>
                   <input
                     type="number"
                     value={formData.price.toString()}
-                    onChange={(e) => setFormData({ ...formData, price: Number(parseInt(e.target.value)) })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        price: Number(parseInt(e.target.value)),
+                      })
+                    }
                     className="input-field"
                     min={0}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-crust-700 mb-1">Category *</label>
+                  <label className="block text-sm font-medium text-crust-700 mb-1">
+                    Category *
+                  </label>
                   <select
                     value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value as ProductCategory })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        category: e.target.value as ProductCategory,
+                      })
+                    }
                     className="input-field"
                     required
                   >
                     {Object.entries(categoryLabels).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-crust-700 mb-1">Weight</label>
+                  <label className="block text-sm font-medium text-crust-700 mb-1">
+                    Weight
+                  </label>
                   <input
                     type="text"
                     value={formData.weight}
-                    onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, weight: e.target.value })
+                    }
                     className="input-field"
                     placeholder="e.g. 500g"
                   />
@@ -668,15 +805,21 @@ export default function ProductsPanel() {
                   <input
                     type="checkbox"
                     checked={formData.hasVariants || false}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      hasVariants: e.target.checked,
-                      variants: e.target.checked ? (formData.variants || []) : []
-                    })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        hasVariants: e.target.checked,
+                        variants: e.target.checked
+                          ? formData.variants || []
+                          : [],
+                      })
+                    }
                     className="rounded border-crust-300 text-crust-600 focus:ring-crust-500"
                   />
                   <Layers className="w-4 h-4 text-crust-500" />
-                  <span className="text-sm font-medium text-crust-700">This product has variants (e.g. flavors, sizes)</span>
+                  <span className="text-sm font-medium text-crust-700">
+                    This product has variants (e.g. flavors, sizes)
+                  </span>
                 </label>
 
                 {formData.hasVariants && (
@@ -690,7 +833,12 @@ export default function ProductsPanel() {
                         <input
                           type="text"
                           value={formData.variantLabel || ""}
-                          onChange={(e) => setFormData({ ...formData, variantLabel: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              variantLabel: e.target.value,
+                            })
+                          }
                           placeholder="e.g. Flavor, Size"
                           className="input-field"
                         />
@@ -702,7 +850,12 @@ export default function ProductsPanel() {
                         <input
                           type="text"
                           value={formData.variantLabelSv || ""}
-                          onChange={(e) => setFormData({ ...formData, variantLabelSv: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              variantLabelSv: e.target.value,
+                            })
+                          }
                           placeholder="e.g. Smak, Storlek"
                           className="input-field"
                         />
@@ -711,15 +864,26 @@ export default function ProductsPanel() {
 
                     {/* Variants List */}
                     <div>
-                      <label className="block text-sm font-medium text-crust-700 mb-2">Variants</label>
+                      <label className="block text-sm font-medium text-crust-700 mb-2">
+                        Variants
+                      </label>
                       <div className="space-y-3">
                         {(formData.variants || []).map((variant, index) => (
-                          <div key={variant.id || index} className="flex flex-wrap gap-2 p-3 bg-flour-50 rounded-lg border border-flour-200">
+                          <div
+                            key={variant.id || index}
+                            className="flex flex-wrap gap-2 p-3 bg-flour-50 rounded-lg border border-flour-200"
+                          >
                             <div className="flex-1 min-w-[120px]">
                               <input
                                 type="text"
                                 value={variant.nameSv}
-                                onChange={(e) => handleUpdateVariant(index, "nameSv", e.target.value)}
+                                onChange={(e) =>
+                                  handleUpdateVariant(
+                                    index,
+                                    "nameSv",
+                                    e.target.value,
+                                  )
+                                }
                                 placeholder="Name (SV) *"
                                 className="input-field text-sm"
                                 required
@@ -729,7 +893,13 @@ export default function ProductsPanel() {
                               <input
                                 type="text"
                                 value={variant.name}
-                                onChange={(e) => handleUpdateVariant(index, "name", e.target.value)}
+                                onChange={(e) =>
+                                  handleUpdateVariant(
+                                    index,
+                                    "name",
+                                    e.target.value,
+                                  )
+                                }
                                 placeholder="Name (EN)"
                                 className="input-field text-sm"
                               />
@@ -738,7 +908,13 @@ export default function ProductsPanel() {
                               <input
                                 type="number"
                                 value={variant.priceDiff || 0}
-                                onChange={(e) => handleUpdateVariant(index, "priceDiff", Number(e.target.value))}
+                                onChange={(e) =>
+                                  handleUpdateVariant(
+                                    index,
+                                    "priceDiff",
+                                    Number(e.target.value),
+                                  )
+                                }
                                 placeholder="+/- kr"
                                 className="input-field text-sm"
                               />
@@ -747,7 +923,13 @@ export default function ProductsPanel() {
                               <input
                                 type="checkbox"
                                 checked={variant.available}
-                                onChange={(e) => handleUpdateVariant(index, "available", e.target.checked)}
+                                onChange={(e) =>
+                                  handleUpdateVariant(
+                                    index,
+                                    "available",
+                                    e.target.checked,
+                                  )
+                                }
                                 className="rounded border-crust-300 text-green-600 focus:ring-green-500"
                               />
                               <span className="text-crust-600">Available</span>
@@ -773,7 +955,8 @@ export default function ProductsPanel() {
                       </button>
 
                       <p className="text-xs text-crust-500 mt-2">
-                        Price diff: Use 0 for same price, positive for more, negative for less (e.g. -5 for 5 kr less)
+                        Price diff: Use 0 for same price, positive for more,
+                        negative for less (e.g. -5 for 5 kr less)
                       </p>
                     </div>
                   </div>
@@ -784,30 +967,60 @@ export default function ProductsPanel() {
               <div>
                 <label className="block text-sm font-medium text-crust-700 mb-2">
                   <Calendar className="w-4 h-4 inline mr-1" />
-                  Available Days (leave empty for all days)
+                  Available Days
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {allDays.map((day) => (
-                    <label
-                      key={day}
-                      className={cn(
-                        "flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition-colors text-sm",
-                        formData.availableDays?.includes(day)
-                          ? "bg-crust-900 text-white border-crust-900"
-                          : "bg-flour-100 text-crust-700 border-flour-300 hover:bg-flour-200"
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.availableDays?.includes(day)}
-                        onChange={(e) => handleDayChange(day, e.target.checked)}
-                        className="sr-only"
-                      />
-                      {dayLabels[day]}
-                    </label>
+                    <div>
+                      <label
+                        key={day}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition-colors text-sm",
+                          formData.availableDays?.includes(day)
+                            ? "bg-crust-900 text-white border-crust-900"
+                            : "bg-flour-100 text-crust-700 border-flour-300 hover:bg-flour-200",
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.availableDays?.includes(day)}
+                          onChange={(e) =>
+                            handleDayChange(day, e.target.checked)
+                          }
+                          className="sr-only"
+                        />
+                        {dayLabels[day]}
+                      </label>
+                    </div>
                   ))}
+                  <label
+                    htmlFor="all-days"
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition-colors text-sm",
+                      allDays.every((day) =>
+                        formData.availableDays?.includes(day),
+                      )
+                        ? "bg-crust-900 text-white border-crust-900"
+                        : "bg-flour-100 text-crust-700 border-flour-300 hover:bg-flour-200",
+                    )}
+                  >
+                    All Days
+                  </label>
+                  <input
+                    type="checkbox"
+                    id="all-days"
+                    checked={allDays.every((day) =>
+                      formData.availableDays?.includes(day),
+                    )}
+                    onChange={(e) =>
+                      handleAllAvailableDaysChange(allDays, e.target.checked)
+                    }
+                    className="sr-only"
+                  />
                 </div>
-                <p className="text-xs text-crust-500 mt-1">If no days are selected, the product is available every day</p>
+                <p className="text-xs text-crust-500 mt-1">
+                  If no days are selected, the product will be hidden
+                </p>
               </div>
 
               {/* Special & Min Order */}
@@ -819,10 +1032,12 @@ export default function ProductsPanel() {
                   </label>
                   <select
                     value={formData.specialType || ""}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      specialType: (e.target.value as "week" | "day") || null
-                    })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        specialType: (e.target.value as "week" | "day") || null,
+                      })
+                    }
                     className="input-field"
                   >
                     <option value="">None</option>
@@ -831,11 +1046,18 @@ export default function ProductsPanel() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-crust-700 mb-1">Min. Order Quantity</label>
+                  <label className="block text-sm font-medium text-crust-700 mb-1">
+                    Min. Order Quantity
+                  </label>
                   <input
                     type="number"
                     value={formData.minOrder || 1}
-                    onChange={(e) => setFormData({ ...formData, minOrder: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        minOrder: Number(e.target.value),
+                      })
+                    }
                     className="input-field"
                     min="1"
                   />
@@ -844,14 +1066,21 @@ export default function ProductsPanel() {
 
               {/* Allergens */}
               <div>
-                <label className="block text-sm font-medium text-crust-700 mb-2">Allergens</label>
+                <label className="block text-sm font-medium text-crust-700 mb-2">
+                  Allergens
+                </label>
                 <div className="flex flex-wrap gap-3">
                   {Object.entries(allergenLabels).map(([key, label]) => (
-                    <label key={key} className="flex items-center gap-2 text-sm">
+                    <label
+                      key={key}
+                      className="flex items-center gap-2 text-sm"
+                    >
                       <input
                         type="checkbox"
                         checked={formData.allergens?.includes(key)}
-                        onChange={(e) => handleAllergenChange(key, e.target.checked)}
+                        onChange={(e) =>
+                          handleAllergenChange(key, e.target.checked)
+                        }
                         className="rounded border-crust-300 text-crust-600 focus:ring-crust-500"
                       />
                       {label}
@@ -866,28 +1095,52 @@ export default function ProductsPanel() {
                   <input
                     type="checkbox"
                     checked={formData.available}
-                    onChange={(e) => setFormData({ ...formData, available: e.target.checked })}
+                    onChange={(e) => {
+                      console.log(
+                        "Test available:",
+                        e.target.checked,
+                        formData.availableDays,
+                      );
+                      setFormData({
+                        ...formData,
+                        available: e.target.checked, // Force uncheck to trigger useEffect that clears days
+                      });
+                    }}
                     className="rounded border-crust-300 text-crust-600 focus:ring-crust-500"
                   />
-                  <span className="text-sm text-crust-700">Available on website</span>
+                  <span className="text-sm text-crust-700">
+                    Available on website
+                  </span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={formData.featured}
-                    onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, featured: e.target.checked })
+                    }
                     className="rounded border-crust-300 text-crust-600 focus:ring-crust-500"
                   />
-                  <span className="text-sm text-crust-700">Show on homepage</span>
+                  <span className="text-sm text-crust-700">
+                    Show on homepage
+                  </span>
                 </label>
               </div>
 
               {/* Submit Buttons */}
               <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-flour-200">
-                <button type="button" onClick={handleCloseModal} className="btn-secondary w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="btn-secondary w-full sm:w-auto"
+                >
                   Cancel
                 </button>
-                <button type="submit" disabled={saving} className="btn-primary w-full sm:w-auto">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="btn-primary w-full sm:w-auto"
+                >
                   {saving ? "Saving..." : editingProduct ? "Update" : "Add"}
                 </button>
               </div>
